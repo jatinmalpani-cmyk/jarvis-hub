@@ -1,0 +1,37 @@
+name: Build Jarvis.dmg
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build Jarvis.app
+        run: |
+          pyinstaller --windowed --onefile --name Jarvis \
+            --osx-bundle-identifier com.local.jarvis \
+            app.py
+
+      - name: Package Jarvis.dmg
+        run: |
+          mkdir dmg-staging
+          cp -R "dist/Jarvis.app" dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+          hdiutil create -volname "Jarvis" -srcfolder dmg-staging -ov -format UDZO Jarvis.dmg
+
+      - name: Upload Jarvis.dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jarvis-dmg
+          path: Jarvis.dmg
